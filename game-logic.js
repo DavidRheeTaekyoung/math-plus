@@ -35,7 +35,7 @@ class GameLogic {
             } while (n1 + n2 < 10 || n1 + n2 > 18);
             this.currentAns = n1 + n2;
             this.currentOperator = '+';
-            this.levelMultiplier = 1.2;
+            this.levelMultiplier = 1.5;
         } else if (difficulty === 3) {
             // Level 3: 20 이하 더하기
             do {
@@ -44,14 +44,14 @@ class GameLogic {
             } while (n1 + n2 > 20);
             this.currentAns = n1 + n2;
             this.currentOperator = '+';
-            this.levelMultiplier = 1.4;
+            this.levelMultiplier = 2.0;
         } else {
             // Level 4: 두자리 두자리 더하기
             n1 = this.r(10, 99);
             n2 = this.r(10, 99);
             this.currentAns = n1 + n2;
             this.currentOperator = '+';
-            this.levelMultiplier = 2.0;
+            this.levelMultiplier = 4.0;
         }
         
         return {
