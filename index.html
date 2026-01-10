@@ -909,26 +909,21 @@
             // 랭킹 표시 (최대 10개)
             await displayRanking();
             
-            // 최고 기록 저장 (점수 기준)
-            let bestScore = parseInt(localStorage.getItem('bestMathScore') || '0');
-            let bestCount = parseInt(localStorage.getItem('bestMathCount') || '0');
+            // Firebase 랭킹에서 현재 사용자의 최고 점수 찾기
+            const userRecords = ranking.filter(record => record.username === currentUsername);
+            let bestScore = 0;
+            if (userRecords.length > 0) {
+                // 현재 사용자의 기록 중 최고 점수 찾기
+                bestScore = Math.max(...userRecords.map(record => record.score));
+            }
             
-            let isNewPersonalRecord = false;
-            if (stats.score > bestScore) {
-                localStorage.setItem('bestMathScore', stats.score);
-                bestScore = stats.score;
-                isNewPersonalRecord = true;
-            }
-            if (stats.correctCount > bestCount) {
-                localStorage.setItem('bestMathCount', stats.correctCount);
-                bestCount = stats.correctCount;
-                isNewPersonalRecord = true;
-            }
+            // 현재 점수가 최고 점수보다 높으면 최고 기록 경신
+            let isNewPersonalRecord = stats.score > bestScore;
             
             // 상황에 맞는 멘트 생성
             let message = '';
             if (isNewPersonalRecord && currentRank === 1) {
-                message = `🎊 <span class="text-pink-500 font-bold">개인 최고 기록 경신 + 1등 달성!</span><br>최고 점수: ${bestScore}점 | 최고 개수: ${bestCount}개`;
+                message = `🎊 <span class="text-pink-500 font-bold">개인 최고 기록 경신 + 1등 달성!</span><br>최고 점수: ${stats.score}점`;
                 confetti({ 
                     particleCount: 200, 
                     spread: 120, 
@@ -937,9 +932,9 @@
                 });
             } else if (isNewPersonalRecord) {
                 if (currentRank > 0 && currentRank <= 10) {
-                    message = `🎊 <span class="text-pink-500 font-bold">개인 최고 기록 경신!</span><br>최고 점수: ${bestScore}점 | 최고 개수: ${bestCount}개<br>랭킹: ${currentRank}등`;
+                    message = `🎊 <span class="text-pink-500 font-bold">개인 최고 기록 경신!</span><br>최고 점수: ${stats.score}점<br>랭킹: ${currentRank}등`;
                 } else {
-                    message = `🎊 <span class="text-pink-500 font-bold">개인 최고 기록 경신!</span><br>최고 점수: ${bestScore}점 | 최고 개수: ${bestCount}개`;
+                    message = `🎊 <span class="text-pink-500 font-bold">개인 최고 기록 경신!</span><br>최고 점수: ${stats.score}점`;
                 }
                 confetti({ 
                     particleCount: 200, 
@@ -948,7 +943,7 @@
                     colors: ['#a855f7', '#ec4899', '#f472b6', '#c084fc']
                 });
             } else if (currentRank > 0 && currentRank === 1) {
-                message = `🥇 <span class="text-yellow-500 font-bold">1등 달성!</span><br>개인 최고 점수: ${bestScore}점 | 최고 개수: ${bestCount}개`;
+                message = `🥇 <span class="text-yellow-500 font-bold">1등 달성!</span><br>개인 최고 점수: ${bestScore}점`;
                 confetti({ 
                     particleCount: 150, 
                     spread: 100, 
@@ -956,11 +951,11 @@
                     colors: ['#fbbf24', '#f59e0b', '#d97706']
                 });
             } else if (currentRank > 0 && currentRank <= 3) {
-                message = `🏆 <span class="text-orange-500 font-bold">${currentRank}등 달성!</span><br>개인 최고 점수: ${bestScore}점 | 최고 개수: ${bestCount}개`;
+                message = `🏆 <span class="text-orange-500 font-bold">${currentRank}등 달성!</span><br>개인 최고 점수: ${bestScore}점`;
             } else if (currentRank > 0 && currentRank <= 10) {
-                message = `✨ <span class="text-purple-500 font-bold">${currentRank}등!</span><br>개인 최고 점수: ${bestScore}점 | 최고 개수: ${bestCount}개`;
+                message = `✨ <span class="text-purple-500 font-bold">${currentRank}등!</span><br>개인 최고 점수: ${bestScore}점`;
             } else {
-                message = `개인 최고 점수: ${bestScore}점<br>개인 최고 개수: ${bestCount}개`;
+                message = `개인 최고 점수: ${bestScore}점`;
             }
             
             document.getElementById('best-score').innerHTML = message;
