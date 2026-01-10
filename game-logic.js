@@ -28,7 +28,14 @@ class GameLogic {
             this.currentOperator = '+';
             this.levelMultiplier = 1.0;
         } else if (difficulty === 2) {
-            // Level 2: 올림이 있는 한자리 더하기 (합이 10 이상 18 이하)
+            // Level 2: 한자리 빼기
+            n1 = this.r(2, 9);
+            n2 = this.r(1, n1 - 1);
+            this.currentAns = n1 - n2;
+            this.currentOperator = '-';
+            this.levelMultiplier = 2.0; // 더하기 1보다 1점 높게
+        } else if (difficulty === 3) {
+            // Level 3: 올림이 있는 한자리 더하기 (합이 10 이상 18 이하)
             do {
                 n1 = this.r(1, 9);
                 n2 = this.r(1, 9);
@@ -36,8 +43,15 @@ class GameLogic {
             this.currentAns = n1 + n2;
             this.currentOperator = '+';
             this.levelMultiplier = 1.5;
-        } else if (difficulty === 3) {
-            // Level 3: 20 이하 더하기
+        } else if (difficulty === 4) {
+            // Level 4: 두자리에서 한자리 빼기
+            n1 = this.r(10, 99);
+            n2 = this.r(1, 9);
+            this.currentAns = n1 - n2;
+            this.currentOperator = '-';
+            this.levelMultiplier = 2.5; // 더하기 2보다 1점 높게
+        } else if (difficulty === 5) {
+            // Level 5: 20 이하 더하기
             do {
                 n1 = this.r(1, 19);
                 n2 = this.r(1, 19);
@@ -45,13 +59,27 @@ class GameLogic {
             this.currentAns = n1 + n2;
             this.currentOperator = '+';
             this.levelMultiplier = 2.0;
-        } else {
-            // Level 4: 두자리 두자리 더하기
+        } else if (difficulty === 6) {
+            // Level 6: 20 이하 빼기
+            n1 = this.r(2, 20);
+            n2 = this.r(1, n1 - 1);
+            this.currentAns = n1 - n2;
+            this.currentOperator = '-';
+            this.levelMultiplier = 3.0; // 더하기 3보다 1점 높게
+        } else if (difficulty === 7) {
+            // Level 7: 두자리 두자리 더하기
             n1 = this.r(10, 99);
             n2 = this.r(10, 99);
             this.currentAns = n1 + n2;
             this.currentOperator = '+';
             this.levelMultiplier = 4.0;
+        } else {
+            // Level 8: 두자리에서 두자리 빼기
+            n1 = this.r(20, 99); // 최소 20으로 설정하여 n2가 10 이상이 되도록
+            n2 = this.r(10, n1 - 1);
+            this.currentAns = n1 - n2;
+            this.currentOperator = '-';
+            this.levelMultiplier = 6.0; // 더하기 4보다 2점 높게
         }
         
         return {
