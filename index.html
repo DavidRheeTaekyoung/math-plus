@@ -214,7 +214,7 @@
 
     <div id="username-screen" class="text-center bg-white p-6 sm:p-8 md:p-12 rounded-3xl shadow-2xl max-w-2xl w-full border-4 border-purple-200">
         <h1 class="text-4xl sm:text-5xl md:text-6xl bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent mb-4">🔢 기초 연산 타임어택</h1>
-        <p class="text-gray-500 text-base sm:text-lg md:text-xl mb-6 italic">오늘도 기초부터 차근차근! 💪</p>
+        <p class="text-gray-500 text-base sm:text-lg md:text-xl mb-6 italic">어려울수록 점수가 높아져요!</p>
         <div class="mb-6">
             <label for="username-input" class="block text-lg sm:text-xl md:text-2xl text-gray-700 mb-3">이름을 입력해주세요</label>
             <input type="text" id="username-input" class="w-full text-center border-4 border-purple-300 rounded-2xl focus:border-pink-500 outline-none transition-all" placeholder="꽁꽁이" maxlength="10">
@@ -226,7 +226,7 @@
 
     <div id="lobby" class="hidden text-center bg-white p-6 sm:p-8 md:p-12 rounded-3xl shadow-2xl max-w-2xl w-full border-4 border-purple-200">
         <h1 class="text-4xl sm:text-5xl md:text-6xl bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent mb-4">🔢 기초 연산 타임어택</h1>
-        <p class="text-gray-500 text-base sm:text-lg md:text-xl mb-2 italic">오늘도 기초부터 차근차근! 💪</p>
+        <p class="text-gray-500 text-base sm:text-lg md:text-xl mb-2 italic">어려울수록 점수가 높아져요!</p>
         <p class="text-gray-600 mb-4 sm:mb-6 text-xl sm:text-2xl md:text-3xl">60초 동안 몇 문제를 맞출 수 있을까? 🚀</p>
         <div class="mb-4 sm:mb-6">
             <label for="lobby-username-input" class="block text-base sm:text-lg md:text-xl text-gray-700 mb-2">플레이어 이름</label>
@@ -234,16 +234,16 @@
         </div>
         <div class="space-y-3 sm:space-y-5">
             <button onclick="startGame(1)" class="w-full bg-gradient-to-r from-purple-300 to-purple-400 hover:from-purple-400 hover:to-purple-500 text-white rounded-3xl shadow-xl transition-all transform hover:scale-105 active:scale-95 border-4 border-purple-200 text-lg sm:text-xl md:text-2xl py-3 sm:py-4">
-                ✨ Level 1: 한 자리 + 한 자리 (합 9 이하) - 기본점수
+                ✨ Level 1: 올림이 없는 한자리 더하기
             </button>
             <button onclick="startGame(2)" class="w-full bg-gradient-to-r from-pink-300 to-rose-400 hover:from-pink-400 hover:to-rose-500 text-white rounded-3xl shadow-xl transition-all transform hover:scale-105 active:scale-95 border-4 border-pink-200 text-lg sm:text-xl md:text-2xl py-3 sm:py-4">
-                🔥 Level 2: 한 자리 + 한 자리 (합 18 이하) - 점수 x1.2
+                🔥 Level 2: 올림이 있는 한자리 더하기
             </button>
             <button onclick="startGame(3)" class="w-full bg-gradient-to-r from-violet-300 to-purple-400 hover:from-violet-400 hover:to-purple-500 text-white rounded-3xl shadow-xl transition-all transform hover:scale-105 active:scale-95 border-4 border-violet-200 text-lg sm:text-xl md:text-2xl py-3 sm:py-4">
-                💪 Level 3: 20 이하 랜덤 더하기 - 점수 x1.4
+                💪 Level 3: 20 이하 더하기
             </button>
             <button onclick="startGame(4)" class="w-full bg-gradient-to-r from-indigo-300 to-purple-400 hover:from-indigo-400 hover:to-purple-500 text-white rounded-3xl shadow-xl transition-all transform hover:scale-105 active:scale-95 border-4 border-indigo-200 text-lg sm:text-xl md:text-2xl py-3 sm:py-4">
-                🎯 Level 4: 두 자리 + 두 자리 더하기 - 점수 x2.0
+                🎯 Level 4: 두자리 두자리 더하기
             </button>
         </div>
     </div>

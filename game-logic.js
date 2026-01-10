@@ -19,7 +19,7 @@ class GameLogic {
         let n1, n2;
         
         if (difficulty === 1) {
-            // Level 1: 한 자리 + 한 자리 더하기 (합이 9 이하)
+            // Level 1: 올림이 없는 한자리 더하기 (합이 9 이하)
             do {
                 n1 = this.r(1, 9);
                 n2 = this.r(1, 9);
@@ -28,16 +28,16 @@ class GameLogic {
             this.currentOperator = '+';
             this.levelMultiplier = 1.0;
         } else if (difficulty === 2) {
-            // Level 2: 한 자리 + 한 자리 더하기 (합이 18 이하)
+            // Level 2: 올림이 있는 한자리 더하기 (합이 10 이상 18 이하)
             do {
                 n1 = this.r(1, 9);
                 n2 = this.r(1, 9);
-            } while (n1 + n2 > 18);
+            } while (n1 + n2 < 10 || n1 + n2 > 18);
             this.currentAns = n1 + n2;
             this.currentOperator = '+';
             this.levelMultiplier = 1.2;
         } else if (difficulty === 3) {
-            // Level 3: 20 이하 랜덤 더하기
+            // Level 3: 20 이하 더하기
             do {
                 n1 = this.r(1, 19);
                 n2 = this.r(1, 19);
@@ -46,7 +46,7 @@ class GameLogic {
             this.currentOperator = '+';
             this.levelMultiplier = 1.4;
         } else {
-            // Level 4: 두 자리 + 두 자리 더하기
+            // Level 4: 두자리 두자리 더하기
             n1 = this.r(10, 99);
             n2 = this.r(10, 99);
             this.currentAns = n1 + n2;
