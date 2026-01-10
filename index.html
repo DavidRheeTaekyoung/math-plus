@@ -492,6 +492,42 @@
             }
         }
 
+        // 특정 사용자의 모든 기록 가져오기 (최고 점수 찾기용)
+        async function getAllRankingForUser(username) {
+            try {
+                if (!isFirebaseAvailable()) {
+                    const ranking = getRankingLocal();
+                    return ranking.filter(record => record.username === username);
+                }
+                
+                // 모든 랭킹 가져오기 (limit 없이)
+                const q = window.firebaseQuery(
+                    window.firebaseCollection(window.firebaseDb, 'rankings'),
+                    window.firebaseOrderBy('score', 'desc')
+                );
+                
+                const querySnapshot = await window.firebaseGetDocs(q);
+                const allRanking = [];
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    allRanking.push({
+                        id: doc.id,
+                        username: data.username,
+                        score: data.score,
+                        correctCount: data.correctCount,
+                        date: data.date?.toDate ? data.date.toDate().toISOString() : data.date
+                    });
+                });
+                
+                // 현재 사용자의 기록만 필터링
+                return allRanking.filter(record => record.username === username);
+            } catch (error) {
+                console.error('사용자 기록 불러오기 실패:', error);
+                const ranking = getRankingLocal();
+                return ranking.filter(record => record.username === username);
+            }
+        }
+
         // Firebase에 랭킹 추가
         async function addToRankingFirebase(username, score, correctCount) {
             try {
@@ -891,6 +927,13 @@
             document.getElementById('final-correct').innerText = `맞춘 개수: ${stats.correctCount}개`;
             document.getElementById('final-accuracy').innerText = `정답률: ${stats.accuracy}%`;
             
+            // 랭킹에 추가하기 전에 현재 사용자의 최고 점수 찾기 (모든 랭킹에서 검색)
+            const allRanking = await getAllRankingForUser(currentUsername);
+            let bestScoreBefore = 0;
+            if (allRanking.length > 0) {
+                bestScoreBefore = Math.max(...allRanking.map(record => record.score));
+            }
+            
             // 랭킹에 추가
             console.log('랭킹 추가 시작:', { username: currentUsername, score: stats.score, correctCount: stats.correctCount });
             await addToRanking(currentUsername, stats.score, stats.correctCount);
@@ -909,16 +952,11 @@
             // 랭킹 표시 (최대 10개)
             await displayRanking();
             
-            // Firebase 랭킹에서 현재 사용자의 최고 점수 찾기
-            const userRecords = ranking.filter(record => record.username === currentUsername);
-            let bestScore = 0;
-            if (userRecords.length > 0) {
-                // 현재 사용자의 기록 중 최고 점수 찾기
-                bestScore = Math.max(...userRecords.map(record => record.score));
-            }
+            // 개인 최고 점수 계산 (현재 점수와 기존 최고 점수 중 더 큰 값)
+            const bestScore = Math.max(stats.score, bestScoreBefore);
             
-            // 현재 점수가 최고 점수보다 높으면 최고 기록 경신
-            let isNewPersonalRecord = stats.score > bestScore;
+            // 현재 점수가 기존 최고 점수보다 높으면 최고 기록 경신
+            let isNewPersonalRecord = stats.score > bestScoreBefore;
             
             // 상황에 맞는 멘트 생성
             let message = '';
