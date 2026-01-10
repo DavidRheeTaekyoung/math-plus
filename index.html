@@ -6,6 +6,35 @@
     <title>기초 연산 타임어택</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        
+        // Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyAkZ9POBOYUIseY1No97Z407WV2-DKLdQw",
+            authDomain: "math-plus-303a1.firebaseapp.com",
+            projectId: "math-plus-303a1",
+            storageBucket: "math-plus-303a1.firebasestorage.app",
+            messagingSenderId: "76435894401",
+            appId: "1:76435894401:web:5dcb2daae2b7312f5d9d80"
+        };
+        
+        // Firebase 초기화
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        // 전역 변수로 export
+        window.firebaseDb = db;
+        window.firebaseAddDoc = addDoc;
+        window.firebaseCollection = collection;
+        window.firebaseQuery = query;
+        window.firebaseOrderBy = orderBy;
+        window.firebaseLimit = limit;
+        window.firebaseGetDocs = getDocs;
+        window.firebaseServerTimestamp = serverTimestamp;
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
     <style>
         body { 
@@ -329,17 +358,78 @@
             });
         }
 
-        function getRanking() {
+        // Firebase 사용 가능 여부 확인
+        function isFirebaseAvailable() {
+            return window.firebaseDb && window.firebaseAddDoc && window.firebaseCollection;
+        }
+
+        // LocalStorage에서 랭킹 가져오기 (Fallback)
+        function getRankingLocal() {
             const ranking = localStorage.getItem('mathRanking');
             return ranking ? JSON.parse(ranking) : [];
         }
 
-        function saveRanking(ranking) {
-            localStorage.setItem('mathRanking', JSON.stringify(ranking));
+        // Firebase에서 랭킹 가져오기
+        async function getRankingFirebase() {
+            try {
+                if (!isFirebaseAvailable()) {
+                    return getRankingLocal();
+                }
+                
+                const q = window.firebaseQuery(
+                    window.firebaseCollection(window.firebaseDb, 'rankings'),
+                    window.firebaseOrderBy('score', 'desc'),
+                    window.firebaseOrderBy('correctCount', 'desc'),
+                    window.firebaseLimit(10)
+                );
+                
+                const querySnapshot = await window.firebaseGetDocs(q);
+                const ranking = [];
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    ranking.push({
+                        id: doc.id,
+                        username: data.username,
+                        score: data.score,
+                        correctCount: data.correctCount,
+                        date: data.date?.toDate ? data.date.toDate().toISOString() : data.date
+                    });
+                });
+                
+                return ranking;
+            } catch (error) {
+                console.error('Firebase 랭킹 불러오기 실패:', error);
+                return getRankingLocal();
+            }
         }
 
-        function addToRanking(username, score, correctCount) {
-            let ranking = getRanking();
+        // Firebase에 랭킹 추가
+        async function addToRankingFirebase(username, score, correctCount) {
+            try {
+                if (!isFirebaseAvailable()) {
+                    return addToRankingLocal(username, score, correctCount);
+                }
+                
+                await window.firebaseAddDoc(
+                    window.firebaseCollection(window.firebaseDb, 'rankings'),
+                    {
+                        username: username,
+                        score: score,
+                        correctCount: correctCount,
+                        date: window.firebaseServerTimestamp()
+                    }
+                );
+                
+                return await getRankingFirebase();
+            } catch (error) {
+                console.error('Firebase 랭킹 저장 실패:', error);
+                return addToRankingLocal(username, score, correctCount);
+            }
+        }
+
+        // LocalStorage에 랭킹 추가 (Fallback)
+        function addToRankingLocal(username, score, correctCount) {
+            let ranking = getRankingLocal();
             const newRecord = {
                 username: username,
                 score: score,
@@ -348,7 +438,6 @@
             };
             ranking.push(newRecord);
             
-            // 점수 기준으로 정렬 (내림차순)
             ranking.sort((a, b) => {
                 if (b.score !== a.score) {
                     return b.score - a.score;
@@ -356,10 +445,18 @@
                 return b.correctCount - a.correctCount;
             });
             
-            // Top 10만 유지
             ranking = ranking.slice(0, 10);
-            saveRanking(ranking);
+            localStorage.setItem('mathRanking', JSON.stringify(ranking));
             return ranking;
+        }
+
+        // 통합 랭킹 함수들
+        async function getRanking() {
+            return await getRankingFirebase();
+        }
+
+        async function addToRanking(username, score, correctCount) {
+            return await addToRankingFirebase(username, score, correctCount);
         }
 
         function findCurrentRank(ranking, username, score, correctCount) {
@@ -391,8 +488,8 @@
             return -1;
         }
 
-        function displayRanking() {
-            const ranking = getRanking();
+        async function displayRanking() {
+            const ranking = await getRanking();
             const rankingList = document.getElementById('ranking-list');
             
             if (ranking.length === 0) {
@@ -747,7 +844,7 @@
             }, 1000);
         }
 
-        function endGame() {
+        async function endGame() {
             clearInterval(timerInterval);
             document.getElementById('game').classList.add('hidden');
             document.getElementById('result').classList.remove('hidden');
@@ -759,12 +856,12 @@
             document.getElementById('final-accuracy').innerText = `정답률: ${accuracy}%`;
             
             // 랭킹에 추가
-            const ranking = addToRanking(currentUsername, score, correctCount);
+            const ranking = await addToRanking(currentUsername, score, correctCount);
             
             // 현재 기록의 랭킹 순위 찾기
             const currentRank = findCurrentRank(ranking, currentUsername, score, correctCount);
             
-            displayRanking();
+            await displayRanking();
             
             // 최고 기록 저장 (점수 기준)
             let bestScore = parseInt(localStorage.getItem('bestMathScore') || '0');
