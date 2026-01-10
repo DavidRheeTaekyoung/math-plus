@@ -6,6 +6,9 @@
     <title>기초 연산 타임어택</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- 게임 로직 및 스코어링 모듈 -->
+    <script src="game-logic.js"></script>
+    <script src="scoring.js"></script>
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
@@ -231,22 +234,16 @@
         </div>
         <div class="space-y-3 sm:space-y-5">
             <button onclick="startGame(1)" class="w-full bg-gradient-to-r from-purple-300 to-purple-400 hover:from-purple-400 hover:to-purple-500 text-white rounded-3xl shadow-xl transition-all transform hover:scale-105 active:scale-95 border-4 border-purple-200 text-lg sm:text-xl md:text-2xl py-3 sm:py-4">
-                ✨ Level 1: 10 이하 더하기
+                ✨ Level 1: 한 자리 + 한 자리 (합 9 이하) - 기본점수
             </button>
             <button onclick="startGame(2)" class="w-full bg-gradient-to-r from-pink-300 to-rose-400 hover:from-pink-400 hover:to-rose-500 text-white rounded-3xl shadow-xl transition-all transform hover:scale-105 active:scale-95 border-4 border-pink-200 text-lg sm:text-xl md:text-2xl py-3 sm:py-4">
-                🔥 Level 2: 10 이하 빼기
+                🔥 Level 2: 한 자리 + 한 자리 (합 18 이하) - 점수 x1.2
             </button>
             <button onclick="startGame(3)" class="w-full bg-gradient-to-r from-violet-300 to-purple-400 hover:from-violet-400 hover:to-purple-500 text-white rounded-3xl shadow-xl transition-all transform hover:scale-105 active:scale-95 border-4 border-violet-200 text-lg sm:text-xl md:text-2xl py-3 sm:py-4">
-                💪 Level 3: 20 이하 더하기
+                💪 Level 3: 20 이하 랜덤 더하기 - 점수 x1.4
             </button>
             <button onclick="startGame(4)" class="w-full bg-gradient-to-r from-indigo-300 to-purple-400 hover:from-indigo-400 hover:to-purple-500 text-white rounded-3xl shadow-xl transition-all transform hover:scale-105 active:scale-95 border-4 border-indigo-200 text-lg sm:text-xl md:text-2xl py-3 sm:py-4">
-                🎯 Level 4: 20 이하 빼기
-            </button>
-            <button onclick="startGame(5)" class="w-full bg-gradient-to-r from-blue-300 to-indigo-400 hover:from-blue-400 hover:to-indigo-500 text-white rounded-3xl shadow-xl transition-all transform hover:scale-105 active:scale-95 border-4 border-blue-200 text-lg sm:text-xl md:text-2xl py-3 sm:py-4">
-                ⚡ Level 5: 두 자리 + 두 자리 더하기
-            </button>
-            <button onclick="startGame(6)" class="w-full bg-gradient-to-r from-cyan-300 to-blue-400 hover:from-cyan-400 hover:to-blue-500 text-white rounded-3xl shadow-xl transition-all transform hover:scale-105 active:scale-95 border-4 border-cyan-200 text-lg sm:text-xl md:text-2xl py-3 sm:py-4">
-                🌟 Level 6: 두 자리 - 두 자리 빼기
+                🎯 Level 4: 두 자리 + 두 자리 더하기 - 점수 x2.0
             </button>
         </div>
     </div>
@@ -293,14 +290,12 @@
     </div>
 
     <script>
-        let score = 0;
-        let correctCount = 0;
-        let totalQuestions = 0;
-        let combo = 0;
-        let negativeCombo = 0;
+        // 게임 모듈 인스턴스
+        const gameLogic = new GameLogic();
+        const scoring = new ScoringSystem();
+        
+        // 게임 상태
         let timeLeft = 60;
-        let currentAns = 0;
-        let currentOperator = '+';
         let timerInterval;
         let difficulty = 1;
         let isWrong = false;
@@ -491,6 +486,7 @@
         async function displayRanking() {
             const ranking = await getRanking();
             const rankingList = document.getElementById('ranking-list');
+            const stats = scoring.getStats();
             
             if (ranking.length === 0) {
                 rankingList.innerHTML = '<p class="text-gray-400 text-lg">아직 기록이 없습니다.</p>';
@@ -501,8 +497,8 @@
                 const date = new Date(record.date);
                 const dateStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
                 const isCurrent = record.username === currentUsername && 
-                                 record.score === score && 
-                                 record.correctCount === correctCount;
+                                 record.score === stats.score && 
+                                 record.correctCount === stats.correctCount;
                 
                 return `
                     <div class="ranking-item bg-gradient-to-r from-purple-50 to-pink-50 p-3 sm:p-4 rounded-2xl border-2 ${isCurrent ? 'border-pink-400 ring-2 ring-pink-300' : 'border-purple-200'}">
@@ -549,11 +545,7 @@
             }
             
             difficulty = level;
-            score = 0;
-            correctCount = 0;
-            totalQuestions = 0;
-            combo = 0;
-            negativeCombo = 0;
+            scoring.reset();
             timeLeft = 60;
             isWrong = false;
             
@@ -576,53 +568,11 @@
         }
 
         function nextQuestion() {
-            let n1, n2;
+            // 게임 로직 모듈을 사용하여 문제 생성
+            const question = gameLogic.generateQuestion(difficulty);
+            scoring.setLevelMultiplier(question.multiplier);
             
-            if (difficulty === 1) {
-                // Level 1: 10 이하의 수 더하기 (합이 10 이하)
-                do {
-                    n1 = r(1, 9);
-                    n2 = r(1, 9);
-                } while (n1 + n2 > 10);
-                currentAns = n1 + n2;
-                currentOperator = '+';
-            } else if (difficulty === 2) {
-                // Level 2: 10 이하의 수 빼기 (음수 없음)
-                n1 = r(1, 10);
-                n2 = r(1, n1); // n2는 n1 이하로 설정하여 음수가 나오지 않게
-                currentAns = n1 - n2;
-                currentOperator = '-';
-            } else if (difficulty === 3) {
-                // Level 3: 합이 20 이하인 두 수의 더하기
-                do {
-                    n1 = r(1, 19);
-                    n2 = r(1, 19);
-                } while (n1 + n2 > 20);
-                currentAns = n1 + n2;
-                currentOperator = '+';
-            } else if (difficulty === 4) {
-                // Level 4: 20 이하의 수 빼기 (음수 없음)
-                do {
-                    n1 = r(1, 20);
-                    n2 = r(1, n1); // n2는 n1 이하로 설정하여 음수가 나오지 않게
-                } while (n1 - n2 > 20);
-                currentAns = n1 - n2;
-                currentOperator = '-';
-            } else if (difficulty === 5) {
-                // Level 5: 두 자리 + 두 자리 더하기
-                n1 = r(10, 99);
-                n2 = r(10, 99);
-                currentAns = n1 + n2;
-                currentOperator = '+';
-            } else {
-                // Level 6: 두 자리 - 두 자리 빼기 (음수 없음)
-                n1 = r(10, 99);
-                n2 = r(10, n1); // n2는 n1 이하로 설정하여 음수가 나오지 않게
-                currentAns = n1 - n2;
-                currentOperator = '-';
-            }
-            
-            document.getElementById('question').innerText = `${n1} ${currentOperator} ${n2}`;
+            document.getElementById('question').innerText = `${question.n1} ${question.operator} ${question.n2}`;
             document.getElementById('answer').value = '';
             document.getElementById('answer').disabled = false;
             document.getElementById('correct-answer').classList.add('hidden');
@@ -635,10 +585,6 @@
             setTimeout(() => {
                 document.getElementById('answer').focus();
             }, 100);
-        }
-
-        function r(min, max) { 
-            return Math.floor(Math.random() * (max - min + 1)) + min; 
         }
 
         function showPraise() {
@@ -654,7 +600,7 @@
             }, 1000);
         }
 
-        function showCombo() {
+        function showCombo(combo) {
             const cd = document.getElementById('combo-display');
             // 5, 10, 15, 20 등 특정 콤보에서만 표시
             if (combo === 5 || combo === 10 || combo === 15 || combo === 20 || combo % 10 === 0) {
@@ -702,48 +648,25 @@
 
         // 공통 정답 체크 함수
         function checkAnswer(userAnswer, userInputString) {
-            const userInputLength = userInputString.length;
-            const correctAnswerLength = String(currentAns).length;
-            
-            // 정답 체크
-            if (userAnswer === currentAns) {
-                return { isCorrect: true, isWrong: false };
-            }
-            
-            // 오답 체크: 입력이 완료되었고 확실히 틀렸을 때만 오답 처리
-            // 입력 자릿수가 정답 자릿수와 같거나 더 많을 때만 오답으로 판단
-            const isInputComplete = userInputLength >= correctAnswerLength;
-            
-            if (isInputComplete && userAnswer !== currentAns) {
-                return { isCorrect: false, isWrong: true };
-            }
-            
-            // 아직 입력 중
-            return { isCorrect: false, isWrong: false };
+            return gameLogic.checkAnswer(userAnswer, userInputString);
         }
 
         // 정답 처리 함수
         function handleCorrectAnswer() {
             if (isWrong) return;
             
-            totalQuestions++;
-            // 오답 콤보 리셋 후 정답 콤보 적용
-            negativeCombo = 0;
-            const scoreChange = 10 + (combo * 2);
-            score += scoreChange;
-            correctCount++;
-            combo++;
+            const result = scoring.handleCorrect();
             
-            showScoreChange(scoreChange);
-            showCombo();
+            showScoreChange(result.scoreChange);
+            showCombo(result.combo);
             
             // 특정 콤보에서만 confetti 효과
-            if (combo === 5 || combo === 10 || combo === 15 || combo === 20 || combo % 10 === 0) {
+            if (result.isSpecialCombo) {
                 animateScore();
             }
             
-            document.getElementById('score-value').innerText = score;
-            document.getElementById('correct-value').innerText = correctCount;
+            document.getElementById('score-value').innerText = result.totalScore;
+            document.getElementById('correct-value').innerText = result.correctCount;
             
             setTimeout(() => {
                 nextQuestion();
@@ -754,23 +677,18 @@
         function handleWrongAnswer(inputElement) {
             if (isWrong) return;
             
-            totalQuestions++;
             isWrong = true;
-            // 정답 콤보 리셋 후 오답 콤보 적용
-            combo = 0;
-            const scoreChange = -(10 + (negativeCombo * 2));
-            score += scoreChange;
-            negativeCombo++;
+            const result = scoring.handleWrong();
             
-            showScoreChange(scoreChange);
+            showScoreChange(result.scoreChange);
             const gameCard = document.getElementById('question-card');
             gameCard.classList.add('wrong');
             document.getElementById('combo-display').innerText = '';
-            document.getElementById('score-value').innerText = score;
+            document.getElementById('score-value').innerText = result.totalScore;
             
             // 정답을 빨간 글씨로 표시
             const correctAnswerDiv = document.getElementById('correct-answer');
-            correctAnswerDiv.innerText = `정답: ${currentAns}`;
+            correctAnswerDiv.innerText = `정답: ${gameLogic.getCurrentAnswer()}`;
             correctAnswerDiv.classList.remove('hidden');
             inputElement.disabled = true;
             
@@ -848,18 +766,17 @@
             clearInterval(timerInterval);
             document.getElementById('game').classList.add('hidden');
             document.getElementById('result').classList.remove('hidden');
-            document.getElementById('final-score').innerText = `${score}점`;
-            document.getElementById('final-correct').innerText = `맞춘 개수: ${correctCount}개`;
             
-            // 정답률 계산 및 표시
-            const accuracy = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
-            document.getElementById('final-accuracy').innerText = `정답률: ${accuracy}%`;
+            const stats = scoring.getStats();
+            document.getElementById('final-score').innerText = `${stats.score}점`;
+            document.getElementById('final-correct').innerText = `맞춘 개수: ${stats.correctCount}개`;
+            document.getElementById('final-accuracy').innerText = `정답률: ${stats.accuracy}%`;
             
             // 랭킹에 추가
-            const ranking = await addToRanking(currentUsername, score, correctCount);
+            const ranking = await addToRanking(currentUsername, stats.score, stats.correctCount);
             
             // 현재 기록의 랭킹 순위 찾기
-            const currentRank = findCurrentRank(ranking, currentUsername, score, correctCount);
+            const currentRank = findCurrentRank(ranking, currentUsername, stats.score, stats.correctCount);
             
             await displayRanking();
             
@@ -868,14 +785,14 @@
             let bestCount = parseInt(localStorage.getItem('bestMathCount') || '0');
             
             let isNewPersonalRecord = false;
-            if (score > bestScore) {
-                localStorage.setItem('bestMathScore', score);
-                bestScore = score;
+            if (stats.score > bestScore) {
+                localStorage.setItem('bestMathScore', stats.score);
+                bestScore = stats.score;
                 isNewPersonalRecord = true;
             }
-            if (correctCount > bestCount) {
-                localStorage.setItem('bestMathCount', correctCount);
-                bestCount = correctCount;
+            if (stats.correctCount > bestCount) {
+                localStorage.setItem('bestMathCount', stats.correctCount);
+                bestCount = stats.correctCount;
                 isNewPersonalRecord = true;
             }
             
