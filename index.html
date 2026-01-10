@@ -498,8 +498,9 @@
         }
 
         function findCurrentRank(ranking, username, score, correctCount) {
-            // 가장 최근 기록(현재 게임 기록)을 찾기 위해 날짜로 비교
-            let currentRecord = null;
+            // 랭킹에서 현재 기록과 일치하는 항목 찾기
+            // 점수와 맞춘 개수가 정확히 일치하는 항목 중 가장 최근 것을 찾음
+            let currentRecordIndex = -1;
             let maxDate = 0;
             
             for (let i = 0; i < ranking.length; i++) {
@@ -509,21 +510,25 @@
                     const recordDate = new Date(ranking[i].date).getTime();
                     if (recordDate > maxDate) {
                         maxDate = recordDate;
-                        currentRecord = ranking[i];
+                        currentRecordIndex = i;
                     }
                 }
             }
             
-            if (!currentRecord) return -1;
-            
-            // 랭킹에서 순위 찾기
-            for (let i = 0; i < ranking.length; i++) {
-                if (ranking[i] === currentRecord) {
-                    return i + 1;
+            // 찾지 못했으면 점수 기준으로 순위 계산
+            if (currentRecordIndex === -1) {
+                // 현재 점수보다 높은 점수를 가진 기록의 개수를 세어서 순위 계산
+                let rank = 1;
+                for (let i = 0; i < ranking.length; i++) {
+                    if (ranking[i].score > score || 
+                        (ranking[i].score === score && ranking[i].correctCount > correctCount)) {
+                        rank++;
+                    }
                 }
+                return rank <= 10 ? rank : -1;
             }
             
-            return -1;
+            return currentRecordIndex + 1;
         }
 
         async function displayRanking() {
@@ -816,7 +821,10 @@
             document.getElementById('final-accuracy').innerText = `정답률: ${stats.accuracy}%`;
             
             // 랭킹에 추가
-            const ranking = await addToRanking(currentUsername, stats.score, stats.correctCount);
+            await addToRanking(currentUsername, stats.score, stats.correctCount);
+            
+            // 랭킹 다시 가져오기 (최신 상태)
+            const ranking = await getRanking();
             
             // 현재 기록의 랭킹 순위 찾기
             const currentRank = findCurrentRank(ranking, currentUsername, stats.score, stats.correctCount);
@@ -850,14 +858,18 @@
                     colors: ['#a855f7', '#ec4899', '#f472b6', '#c084fc']
                 });
             } else if (isNewPersonalRecord) {
-                message = `🎊 <span class="text-pink-500 font-bold">개인 최고 기록 경신!</span><br>최고 점수: ${bestScore}점 | 최고 개수: ${bestCount}개<br>랭킹: ${currentRank}등`;
+                if (currentRank > 0 && currentRank <= 10) {
+                    message = `🎊 <span class="text-pink-500 font-bold">개인 최고 기록 경신!</span><br>최고 점수: ${bestScore}점 | 최고 개수: ${bestCount}개<br>랭킹: ${currentRank}등`;
+                } else {
+                    message = `🎊 <span class="text-pink-500 font-bold">개인 최고 기록 경신!</span><br>최고 점수: ${bestScore}점 | 최고 개수: ${bestCount}개`;
+                }
                 confetti({ 
                     particleCount: 200, 
                     spread: 120, 
                     origin: { y: 0.5 },
                     colors: ['#a855f7', '#ec4899', '#f472b6', '#c084fc']
                 });
-            } else if (currentRank === 1) {
+            } else if (currentRank > 0 && currentRank === 1) {
                 message = `🥇 <span class="text-yellow-500 font-bold">1등 달성!</span><br>개인 최고 점수: ${bestScore}점 | 최고 개수: ${bestCount}개`;
                 confetti({ 
                     particleCount: 150, 
@@ -865,12 +877,12 @@
                     origin: { y: 0.5 },
                     colors: ['#fbbf24', '#f59e0b', '#d97706']
                 });
-            } else if (currentRank <= 3) {
+            } else if (currentRank > 0 && currentRank <= 3) {
                 message = `🏆 <span class="text-orange-500 font-bold">${currentRank}등 달성!</span><br>개인 최고 점수: ${bestScore}점 | 최고 개수: ${bestCount}개`;
-            } else if (currentRank <= 10) {
+            } else if (currentRank > 0 && currentRank <= 10) {
                 message = `✨ <span class="text-purple-500 font-bold">${currentRank}등!</span><br>개인 최고 점수: ${bestScore}점 | 최고 개수: ${bestCount}개`;
             } else {
-                message = `개인 최고 점수: ${bestScore}점<br>개인 최고 개수: ${bestCount}개<br>랭킹: ${currentRank}등`;
+                message = `개인 최고 점수: ${bestScore}점<br>개인 최고 개수: ${bestCount}개`;
             }
             
             document.getElementById('best-score').innerHTML = message;
