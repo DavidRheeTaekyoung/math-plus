@@ -411,14 +411,15 @@
         async function getRankingFirebase() {
             try {
                 if (!isFirebaseAvailable()) {
+                    console.log('Firebase 사용 불가, LocalStorage에서 랭킹 가져오기');
                     return getRankingLocal();
                 }
                 
+                // Firebase에서는 하나의 orderBy만 사용 가능하므로, 점수로만 정렬 후 클라이언트에서 추가 정렬
                 const q = window.firebaseQuery(
                     window.firebaseCollection(window.firebaseDb, 'rankings'),
                     window.firebaseOrderBy('score', 'desc'),
-                    window.firebaseOrderBy('correctCount', 'desc'),
-                    window.firebaseLimit(10)
+                    window.firebaseLimit(50) // 충분히 많이 가져온 후 클라이언트에서 정렬
                 );
                 
                 const querySnapshot = await window.firebaseGetDocs(q);
@@ -434,7 +435,20 @@
                     });
                 });
                 
-                return ranking;
+                console.log(`Firebase에서 ${ranking.length}개의 랭킹 가져옴`);
+                
+                // 클라이언트에서 점수로 정렬 후, 같은 점수면 correctCount로 정렬
+                ranking.sort((a, b) => {
+                    if (b.score !== a.score) {
+                        return b.score - a.score;
+                    }
+                    return b.correctCount - a.correctCount;
+                });
+                
+                // Top 10만 반환
+                const top10 = ranking.slice(0, 10);
+                console.log('Top 10 랭킹:', top10);
+                return top10;
             } catch (error) {
                 console.error('Firebase 랭킹 불러오기 실패:', error);
                 return getRankingLocal();
@@ -445,8 +459,11 @@
         async function addToRankingFirebase(username, score, correctCount) {
             try {
                 if (!isFirebaseAvailable()) {
+                    console.log('Firebase 사용 불가, LocalStorage 사용');
                     return addToRankingLocal(username, score, correctCount);
                 }
+                
+                console.log('Firebase에 랭킹 추가 중:', { username, score, correctCount });
                 
                 await window.firebaseAddDoc(
                     window.firebaseCollection(window.firebaseDb, 'rankings'),
@@ -457,6 +474,11 @@
                         date: window.firebaseServerTimestamp()
                     }
                 );
+                
+                console.log('Firebase 랭킹 추가 완료');
+                
+                // 랭킹 추가 후 약간의 지연을 두고 다시 가져오기
+                await new Promise(resolve => setTimeout(resolve, 300));
                 
                 return await getRankingFirebase();
             } catch (error) {
@@ -515,20 +537,29 @@
                 }
             }
             
-            // 찾지 못했으면 점수 기준으로 순위 계산
-            if (currentRecordIndex === -1) {
-                // 현재 점수보다 높은 점수를 가진 기록의 개수를 세어서 순위 계산
-                let rank = 1;
-                for (let i = 0; i < ranking.length; i++) {
-                    if (ranking[i].score > score || 
-                        (ranking[i].score === score && ranking[i].correctCount > correctCount)) {
-                        rank++;
-                    }
-                }
-                return rank <= 10 ? rank : -1;
+            // 찾았으면 인덱스 + 1 반환 (1등부터 시작)
+            if (currentRecordIndex !== -1) {
+                return currentRecordIndex + 1;
             }
             
-            return currentRecordIndex + 1;
+            // 찾지 못했으면 점수 기준으로 순위 계산
+            // 현재 점수보다 높은 점수를 가진 기록의 개수를 세어서 순위 계산
+            let rank = 1;
+            for (let i = 0; i < ranking.length; i++) {
+                if (ranking[i].score > score || 
+                    (ranking[i].score === score && ranking[i].correctCount > correctCount)) {
+                    rank++;
+                }
+            }
+            
+            // 현재 기록이 랭킹에 없지만 Top 10 안에 들어갈 수 있는 경우
+            // (예: 1등을 넘어선 기록)
+            if (rank <= 10) {
+                return rank;
+            }
+            
+            // Top 10 밖이면 -1 반환
+            return -1;
         }
 
         async function displayRanking() {
@@ -541,7 +572,10 @@
                 return;
             }
             
-            rankingList.innerHTML = ranking.map((record, index) => {
+            // 최대 10개까지 표시
+            const displayRanking = ranking.slice(0, 10);
+            
+            rankingList.innerHTML = displayRanking.map((record, index) => {
                 const date = new Date(record.date);
                 const dateStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
                 const isCurrent = record.username === currentUsername && 
@@ -821,14 +855,21 @@
             document.getElementById('final-accuracy').innerText = `정답률: ${stats.accuracy}%`;
             
             // 랭킹에 추가
+            console.log('랭킹 추가 시작:', { username: currentUsername, score: stats.score, correctCount: stats.correctCount });
             await addToRanking(currentUsername, stats.score, stats.correctCount);
+            
+            // Firebase 동기화를 위해 약간의 지연 후 랭킹 다시 가져오기
+            await new Promise(resolve => setTimeout(resolve, 800));
             
             // 랭킹 다시 가져오기 (최신 상태)
             const ranking = await getRanking();
+            console.log('랭킹 가져오기 완료, 총 개수:', ranking.length);
             
             // 현재 기록의 랭킹 순위 찾기
             const currentRank = findCurrentRank(ranking, currentUsername, stats.score, stats.correctCount);
+            console.log('현재 랭킹 순위:', currentRank);
             
+            // 랭킹 표시 (최대 10개)
             await displayRanking();
             
             // 최고 기록 저장 (점수 기준)
