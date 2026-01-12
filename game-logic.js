@@ -99,22 +99,87 @@ class GameLogic {
             this.currentOperator = '×';
             this.levelMultiplier = 8.0;
         } else if (difficulty === 11) {
-            // Level 11: 2의 거듭제곱 (1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024)
-            const powers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; // 2^0 ~ 2^10
+            // Level 11: 3의 거듭제곱 곱셈 형식 (예: 3 x 9, 9 x 27)
+            const powers = [2, 3, 4, 5]; // 3^2 ~ 3^5 (3^1=3은 너무 쉬워서 제외)
             const power = powers[this.r(0, powers.length - 1)];
-            n1 = 2;
-            n2 = power;
-            this.currentAns = Math.pow(2, power);
-            this.currentOperator = '^';
-            this.levelMultiplier = 9.0;
-        } else if (difficulty === 12) {
-            // Level 12: 3의 거듭제곱 (1, 3, 9, 27, 81, 243)
-            const powers = [0, 1, 2, 3, 4, 5]; // 3^0 ~ 3^5
-            const power = powers[this.r(0, powers.length - 1)];
-            n1 = 3;
-            n2 = power;
+            // power를 두 개의 지수로 분해 (예: 5 = 2 + 3, 4 = 2 + 2)
+            let exp1, exp2;
+            if (power === 2) {
+                exp1 = 1; exp2 = 1; // 3^2 = 3 x 3
+            } else if (power === 3) {
+                exp1 = 1; exp2 = 2; // 3^3 = 3 x 9
+            } else if (power === 4) {
+                // 3^4 = 81 = 3 x 27 또는 9 x 9
+                if (this.r(0, 1) === 0) {
+                    exp1 = 1; exp2 = 3; // 3 x 27
+                } else {
+                    exp1 = 2; exp2 = 2; // 9 x 9
+                }
+            } else { // power === 5
+                // 3^5 = 243 = 9 x 27 또는 3 x 81
+                if (this.r(0, 1) === 0) {
+                    exp1 = 2; exp2 = 3; // 9 x 27
+                } else {
+                    exp1 = 1; exp2 = 4; // 3 x 81
+                }
+            }
+            n1 = Math.pow(3, exp1);
+            n2 = Math.pow(3, exp2);
             this.currentAns = Math.pow(3, power);
-            this.currentOperator = '^';
+            this.currentOperator = '×';
+            this.levelMultiplier = 8.0;
+        } else if (difficulty === 12) {
+            // Level 12: 2의 거듭제곱 곱셈 형식 (예: 16 x 8, 32 x 16)
+            const powers = [3, 4, 5, 6, 7, 8, 9, 10]; // 2^3 ~ 2^10 (작은 값들은 제외)
+            const power = powers[this.r(0, powers.length - 1)];
+            // power를 두 개의 지수로 분해
+            let exp1, exp2;
+            if (power === 3) {
+                exp1 = 2; exp2 = 1; // 2^3 = 8 = 4 x 2
+            } else if (power === 4) {
+                exp1 = 2; exp2 = 2; // 2^4 = 16 = 4 x 4
+            } else if (power === 5) {
+                exp1 = 3; exp2 = 2; // 2^5 = 32 = 8 x 4
+            } else if (power === 6) {
+                // 2^6 = 64 = 8 x 8 또는 16 x 4
+                if (this.r(0, 1) === 0) {
+                    exp1 = 3; exp2 = 3; // 8 x 8
+                } else {
+                    exp1 = 4; exp2 = 2; // 16 x 4
+                }
+            } else if (power === 7) {
+                // 2^7 = 128 = 16 x 8 또는 32 x 4
+                if (this.r(0, 1) === 0) {
+                    exp1 = 4; exp2 = 3; // 16 x 8
+                } else {
+                    exp1 = 5; exp2 = 2; // 32 x 4
+                }
+            } else if (power === 8) {
+                // 2^8 = 256 = 16 x 16 또는 32 x 8
+                if (this.r(0, 1) === 0) {
+                    exp1 = 4; exp2 = 4; // 16 x 16
+                } else {
+                    exp1 = 5; exp2 = 3; // 32 x 8
+                }
+            } else if (power === 9) {
+                // 2^9 = 512 = 32 x 16 또는 64 x 8
+                if (this.r(0, 1) === 0) {
+                    exp1 = 5; exp2 = 4; // 32 x 16
+                } else {
+                    exp1 = 6; exp2 = 3; // 64 x 8
+                }
+            } else { // power === 10
+                // 2^10 = 1024 = 32 x 32 또는 64 x 16
+                if (this.r(0, 1) === 0) {
+                    exp1 = 5; exp2 = 5; // 32 x 32
+                } else {
+                    exp1 = 6; exp2 = 4; // 64 x 16
+                }
+            }
+            n1 = Math.pow(2, exp1);
+            n2 = Math.pow(2, exp2);
+            this.currentAns = Math.pow(2, power);
+            this.currentOperator = '×';
             this.levelMultiplier = 9.0;
         } else if (difficulty === 13) {
             // Level 13: 두자리수 × 한자리수 (10~19 × 1~9)
