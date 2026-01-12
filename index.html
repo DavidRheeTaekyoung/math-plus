@@ -226,9 +226,19 @@
         </button>
         
         <div id="username-ranking-section" class="mt-4 sm:mt-6">
-            <h3 class="text-xl sm:text-2xl md:text-3xl text-purple-600 font-bold mb-3 sm:mb-4">🏆 역대 랭킹 Top 10</h3>
-            <div id="username-ranking-list" class="space-y-2">
-                <!-- 랭킹이 여기에 표시됩니다 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                <div>
+                    <h3 class="text-xl sm:text-2xl md:text-3xl text-purple-600 font-bold mb-3 sm:mb-4">🏆 서버 전체 랭킹 Top 10</h3>
+                    <div id="username-ranking-list" class="space-y-2">
+                        <!-- 전체 랭킹이 여기에 표시됩니다 -->
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-xl sm:text-2xl md:text-3xl text-pink-600 font-bold mb-3 sm:mb-4">⭐ 개인 랭킹 Top 10</h3>
+                    <div id="username-personal-ranking-list" class="space-y-2">
+                        <!-- 개인 랭킹이 여기에 표시됩니다 -->
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -321,9 +331,19 @@
         </button>
         
         <div id="ranking-section" class="mb-4 sm:mb-6">
-            <h3 class="text-2xl sm:text-3xl md:text-4xl text-purple-600 font-bold mb-3 sm:mb-4">🏆 역대 랭킹 Top 10</h3>
-            <div id="ranking-list" class="space-y-2">
-                <!-- 랭킹이 여기에 표시됩니다 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                <div>
+                    <h3 class="text-2xl sm:text-3xl md:text-4xl text-purple-600 font-bold mb-3 sm:mb-4">🏆 서버 전체 랭킹 Top 10</h3>
+                    <div id="ranking-list" class="space-y-2">
+                        <!-- 전체 랭킹이 여기에 표시됩니다 -->
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-2xl sm:text-3xl md:text-4xl text-pink-600 font-bold mb-3 sm:mb-4">⭐ 개인 랭킹 Top 10</h3>
+                    <div id="personal-ranking-list" class="space-y-2">
+                        <!-- 개인 랭킹이 여기에 표시됩니다 -->
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -340,7 +360,7 @@
         let isWrong = false;
         let currentUsername = '꽁꽁이';
 
-        // 유저네임 화면용 랭킹 표시
+        // 유저네임 화면용 전체 랭킹 표시
         async function displayUsernameRanking() {
             const ranking = await getRanking();
             const rankingList = document.getElementById('username-ranking-list');
@@ -376,6 +396,57 @@
             }).join('');
         }
 
+        // 유저네임 화면용 개인 랭킹 표시
+        async function displayUsernamePersonalRanking() {
+            const savedUsername = localStorage.getItem('mathUsername');
+            if (!savedUsername) {
+                const personalRankingList = document.getElementById('username-personal-ranking-list');
+                personalRankingList.innerHTML = '<p class="text-gray-400 text-sm sm:text-base">이름을 입력하면 개인 랭킹이 표시됩니다.</p>';
+                return;
+            }
+
+            const personalRecords = await getAllRankingForUser(savedUsername);
+            const personalRankingList = document.getElementById('username-personal-ranking-list');
+            
+            if (personalRecords.length === 0) {
+                personalRankingList.innerHTML = '<p class="text-gray-400 text-sm sm:text-base">아직 기록이 없습니다.</p>';
+                return;
+            }
+            
+            // 점수 순으로 정렬 (높은 점수 우선, 같은 점수면 correctCount 높은 순)
+            personalRecords.sort((a, b) => {
+                if (b.score !== a.score) {
+                    return b.score - a.score;
+                }
+                return b.correctCount - a.correctCount;
+            });
+            
+            // Top 10까지만 표시
+            const top10 = personalRecords.slice(0, 10);
+            
+            personalRankingList.innerHTML = top10.map((record, index) => {
+                const date = new Date(record.date);
+                const dateStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
+                
+                return `
+                    <div class="ranking-item bg-gradient-to-r from-pink-50 to-purple-50 p-2 sm:p-3 rounded-2xl border-2 border-pink-200">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="text-lg sm:text-xl font-bold ${index === 0 ? 'text-yellow-500' : index === 1 ? 'text-gray-400' : index === 2 ? 'text-orange-600' : 'text-pink-500'}">
+                                    ${index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
+                                </span>
+                                <span class="text-sm sm:text-base md:text-lg font-bold text-gray-800">${record.score}점</span>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-xs text-gray-500">${record.correctCount}개</div>
+                                <div class="text-xs text-gray-400">${dateStr}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
         // 페이지 로드 시 유저네임 불러오기 및 랭킹 표시
         window.addEventListener('DOMContentLoaded', async () => {
             const savedUsername = localStorage.getItem('mathUsername');
@@ -400,6 +471,7 @@
             
             // 랭킹 표시
             await displayUsernameRanking();
+            await displayUsernamePersonalRanking();
         });
 
         function saveUsername() {
@@ -660,32 +732,82 @@
             
             if (ranking.length === 0) {
                 rankingList.innerHTML = '<p class="text-gray-400 text-lg">아직 기록이 없습니다.</p>';
+            } else {
+                // 최대 10개까지 표시
+                const displayRanking = ranking.slice(0, 10);
+                
+                rankingList.innerHTML = displayRanking.map((record, index) => {
+                    const date = new Date(record.date);
+                    const dateStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
+                    const isCurrent = record.username === currentUsername && 
+                                     record.score === stats.score && 
+                                     record.correctCount === stats.correctCount;
+                    
+                    return `
+                        <div class="ranking-item bg-gradient-to-r from-purple-50 to-pink-50 p-3 sm:p-4 rounded-2xl border-2 ${isCurrent ? 'border-pink-400 ring-2 ring-pink-300' : 'border-purple-200'}">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2 sm:gap-3">
+                                    <span class="text-2xl sm:text-3xl font-bold ${index === 0 ? 'text-yellow-500' : index === 1 ? 'text-gray-400' : index === 2 ? 'text-orange-600' : 'text-purple-500'}">
+                                        ${index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
+                                    </span>
+                                    <span class="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">${record.username}</span>
+                                    ${isCurrent ? '<span class="text-pink-500 text-sm sm:text-base">✨</span>' : ''}
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-base sm:text-lg md:text-xl font-bold text-purple-600">${record.score}점</div>
+                                    <div class="text-xs sm:text-sm text-gray-500">${record.correctCount}개 | ${dateStr}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            // 개인 랭킹도 함께 표시
+            await displayPersonalRanking();
+        }
+
+        // 결과 화면용 개인 랭킹 표시
+        async function displayPersonalRanking() {
+            const personalRecords = await getAllRankingForUser(currentUsername);
+            const personalRankingList = document.getElementById('personal-ranking-list');
+            const stats = scoring.getStats();
+            
+            if (personalRecords.length === 0) {
+                personalRankingList.innerHTML = '<p class="text-gray-400 text-lg">아직 기록이 없습니다.</p>';
                 return;
             }
             
-            // 최대 10개까지 표시
-            const displayRanking = ranking.slice(0, 10);
+            // 점수 순으로 정렬 (높은 점수 우선, 같은 점수면 correctCount 높은 순)
+            personalRecords.sort((a, b) => {
+                if (b.score !== a.score) {
+                    return b.score - a.score;
+                }
+                return b.correctCount - a.correctCount;
+            });
             
-            rankingList.innerHTML = displayRanking.map((record, index) => {
+            // Top 10까지만 표시
+            const top10 = personalRecords.slice(0, 10);
+            
+            personalRankingList.innerHTML = top10.map((record, index) => {
                 const date = new Date(record.date);
                 const dateStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
-                const isCurrent = record.username === currentUsername && 
-                                 record.score === stats.score && 
+                const isCurrent = record.score === stats.score && 
                                  record.correctCount === stats.correctCount;
                 
                 return `
-                    <div class="ranking-item bg-gradient-to-r from-purple-50 to-pink-50 p-3 sm:p-4 rounded-2xl border-2 ${isCurrent ? 'border-pink-400 ring-2 ring-pink-300' : 'border-purple-200'}">
+                    <div class="ranking-item bg-gradient-to-r from-pink-50 to-purple-50 p-3 sm:p-4 rounded-2xl border-2 ${isCurrent ? 'border-pink-400 ring-2 ring-pink-300' : 'border-pink-200'}">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2 sm:gap-3">
-                                <span class="text-2xl sm:text-3xl font-bold ${index === 0 ? 'text-yellow-500' : index === 1 ? 'text-gray-400' : index === 2 ? 'text-orange-600' : 'text-purple-500'}">
+                                <span class="text-2xl sm:text-3xl font-bold ${index === 0 ? 'text-yellow-500' : index === 1 ? 'text-gray-400' : index === 2 ? 'text-orange-600' : 'text-pink-500'}">
                                     ${index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
                                 </span>
-                                <span class="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">${record.username}</span>
+                                <span class="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">${record.score}점</span>
                                 ${isCurrent ? '<span class="text-pink-500 text-sm sm:text-base">✨</span>' : ''}
                             </div>
                             <div class="text-right">
-                                <div class="text-base sm:text-lg md:text-xl font-bold text-purple-600">${record.score}점</div>
-                                <div class="text-xs sm:text-sm text-gray-500">${record.correctCount}개 | ${dateStr}</div>
+                                <div class="text-xs sm:text-sm text-gray-500">${record.correctCount}개</div>
+                                <div class="text-xs sm:text-sm text-gray-400">${dateStr}</div>
                             </div>
                         </div>
                     </div>
