@@ -266,6 +266,24 @@
             <button onclick="startGame(8)" class="w-full bg-gradient-to-r from-indigo-300 to-purple-400 hover:from-indigo-400 hover:to-purple-500 text-white rounded-3xl shadow-xl transition-all transform hover:scale-105 active:scale-95 border-4 border-indigo-200 text-lg sm:text-xl md:text-2xl py-3 sm:py-4 text-left pl-4 sm:pl-6">
                 Level 8: 두자리에서 두자리 빼기
             </button>
+            <button onclick="startGame(9)" class="w-full bg-gradient-to-r from-purple-300 to-purple-400 hover:from-purple-400 hover:to-purple-500 text-white rounded-3xl shadow-xl transition-all transform hover:scale-105 active:scale-95 border-4 border-purple-200 text-lg sm:text-xl md:text-2xl py-3 sm:py-4 text-left pl-4 sm:pl-6">
+                Level 9: 구구단 (곱해서 20 이하)
+            </button>
+            <button onclick="startGame(10)" class="w-full bg-gradient-to-r from-pink-300 to-rose-400 hover:from-pink-400 hover:to-rose-500 text-white rounded-3xl shadow-xl transition-all transform hover:scale-105 active:scale-95 border-4 border-pink-200 text-lg sm:text-xl md:text-2xl py-3 sm:py-4 text-left pl-4 sm:pl-6">
+                Level 10: 구구단 (곱해서 20 초과)
+            </button>
+            <button onclick="startGame(11)" class="w-full bg-gradient-to-r from-violet-300 to-purple-400 hover:from-violet-400 hover:to-purple-500 text-white rounded-3xl shadow-xl transition-all transform hover:scale-105 active:scale-95 border-4 border-violet-200 text-lg sm:text-xl md:text-2xl py-3 sm:py-4 text-left pl-4 sm:pl-6">
+                Level 11: 2의 거듭제곱 (1024까지)
+            </button>
+            <button onclick="startGame(12)" class="w-full bg-gradient-to-r from-indigo-300 to-purple-400 hover:from-indigo-400 hover:to-purple-500 text-white rounded-3xl shadow-xl transition-all transform hover:scale-105 active:scale-95 border-4 border-indigo-200 text-lg sm:text-xl md:text-2xl py-3 sm:py-4 text-left pl-4 sm:pl-6">
+                Level 12: 3의 거듭제곱 (243까지)
+            </button>
+            <button onclick="startGame(13)" class="w-full bg-gradient-to-r from-purple-300 to-purple-400 hover:from-purple-400 hover:to-purple-500 text-white rounded-3xl shadow-xl transition-all transform hover:scale-105 active:scale-95 border-4 border-purple-200 text-lg sm:text-xl md:text-2xl py-3 sm:py-4 text-left pl-4 sm:pl-6">
+                Level 13: 두자리수 × 한자리수
+            </button>
+            <button onclick="startGame(14)" class="w-full bg-gradient-to-r from-pink-300 to-rose-400 hover:from-pink-400 hover:to-rose-500 text-white rounded-3xl shadow-xl transition-all transform hover:scale-105 active:scale-95 border-4 border-pink-200 text-lg sm:text-xl md:text-2xl py-3 sm:py-4 text-left pl-4 sm:pl-6">
+                Level 14: 제곱수 외우기 (1²~19²)
+            </button>
         </div>
     </div>
 
@@ -727,7 +745,20 @@
             const question = gameLogic.generateQuestion(difficulty);
             scoring.setLevelMultiplier(question.multiplier);
             
-            document.getElementById('question').innerText = `${question.n1} ${question.operator} ${question.n2}`;
+            // 문제 표시 형식 결정
+            let questionText = '';
+            if (question.operator === '^') {
+                // 거듭제곱: 2^5 형식
+                questionText = `${question.n1}^${question.n2}`;
+            } else if (question.operator === '²') {
+                // 제곱수: 5² 형식
+                questionText = `${question.n1}²`;
+            } else {
+                // 일반 연산: 2 + 3, 5 × 4 형식
+                questionText = `${question.n1} ${question.operator} ${question.n2}`;
+            }
+            
+            document.getElementById('question').innerText = questionText;
             document.getElementById('answer').value = '';
             document.getElementById('answer').disabled = false;
             document.getElementById('correct-answer').classList.add('hidden');
